@@ -12,6 +12,8 @@ from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
 from mindsearch.agent import init_agent
+from mindsearch.multimodal import MultimodalPart, normalize_multimodal_inputs
+from mindsearch.rag import Document, rag_store
 
 
 def parse_arguments():
@@ -42,6 +44,25 @@ class GenerationParams(BaseModel):
     inputs: Union[str, List[Dict]]
     session_id: int = Field(default_factory=lambda: random.randint(0, 999999))
     agent_cfg: Dict = dict()
+
+
+class RAGDocumentParams(BaseModel):
+    id: str
+    text: str
+    metadata: Dict[str, str] = Field(default_factory=dict)
+
+
+class RAGIndexParams(BaseModel):
+    documents: List[RAGDocumentParams]
+
+
+class RAGSearchParams(BaseModel):
+    query: str
+    top_k: int = 5
+
+
+class MultimodalNormalizeParams(BaseModel):
+    inputs: Union[str, List[Dict]]
 
 
 def _postprocess_agent_message(message: dict) -> dict:
@@ -166,6 +187,27 @@ async def run_async(request: GenerationParams, _request: Request):
         use_async=True,
     )
     return EventSourceResponse(generate(), ping=300)
+
+
+@app.post("/rag/index")
+async def rag_index(request: RAGIndexParams):
+    documents = [
+        Document(id=item.id, text=item.text, metadata=item.metadata)
+        for item in request.documents
+    ]
+    indexed = rag_store.add_documents(documents)
+    return {"indexed": indexed}
+
+
+@app.post("/rag/search")
+async def rag_search(request: RAGSearchParams):
+    results = rag_store.search(request.query, request.top_k)
+    return {"results": [result.__dict__ for result in results]}
+
+
+@app.post("/multimodal/normalize", response_model=List[MultimodalPart])
+async def multimodal_normalize(request: MultimodalNormalizeParams):
+    return normalize_multimodal_inputs(request.inputs)
 
 
 app.add_api_route("/solve", run_async if args.asy else run, methods=["POST"])
