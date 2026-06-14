@@ -42,9 +42,53 @@ MindSearch 是一个开源的 AI 搜索引擎框架，具有与 Perplexity.ai Pr
 
 ### 步骤1: 依赖安装
 
+建议使用 Python 3.10 或 3.11 创建独立环境后再安装依赖。Windows 上如果使用
+Python 3.13，部分依赖可能没有预编译 wheel，`pip` 会尝试下载 Rust
+工具链并停在 `Preparing metadata (pyproject.toml)` / `downloading 6 components`
+较久。遇到这种情况优先切换到 Python 3.10 环境，而不是继续等待源码编译。
+
+```bash
+# conda 推荐方式
+conda create -n mindsearch python=3.10 -y
+conda activate mindsearch
+python -m pip install --upgrade pip setuptools wheel
+pip install -r requirements.txt
+```
+
+如果在 Windows PowerShell 中执行 `py -3.10 -m venv .venv` 时提示
+`No suitable Python runtime found`，说明本机尚未安装 Python 3.10。请先安装
+Miniconda/Anaconda，或者从 Python 官网/Microsoft Store/winget 安装 Python
+3.10，然后重新打开终端再创建虚拟环境。安装后可用以下命令确认系统识别到了
+Python 3.10：
+
+```powershell
+py -0p
+py -3.10 --version
+```
+
+如果 Windows 安装依赖时报 `Failed to build func-timeout timeout-decorator`，并且
+包含 `[WinError 3] The system cannot find the path specified: 'd:\\'`，通常是
+PowerShell 的临时目录或缓存目录指向了不存在的 D 盘。请把 `TEMP`、`TMP` 和
+`PIP_CACHE_DIR` 指到存在的目录后重试：
+
+```powershell
+New-Item -ItemType Directory -Force $env:LOCALAPPDATA\Temp | Out-Null
+New-Item -ItemType Directory -Force $env:LOCALAPPDATA\pip\Cache | Out-Null
+$env:TEMP = "$env:LOCALAPPDATA\Temp"
+$env:TMP = "$env:LOCALAPPDATA\Temp"
+$env:PIP_CACHE_DIR = "$env:LOCALAPPDATA\pip\Cache"
+python -m pip cache purge
+pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple --no-cache-dir
+```
+
+如果只是在已有环境中安装：
+
 ```bash
 pip install -r requirements.txt
 ```
+
+完成 `python -m compileall mindsearch` 后，可继续参考 [Windows 本地跑通流程](./docs/windows_runbook_zh.md)
+按顺序验证后端、RAG、多模态归一化和 `/solve` 接口。
 
 ### 步骤2: 启动 MindSearch API
 

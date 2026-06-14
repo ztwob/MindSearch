@@ -55,6 +55,25 @@ gpt4 = dict(
                             "https://api.openai.com/v1/chat/completions"),
 )
 
+deepseek = dict(
+    type=GPTAPI,
+    model_type=os.environ.get("DEEPSEEK_MODEL", "deepseek-v4-flash"),
+    key=os.environ.get("DEEPSEEK_API_KEY", "YOUR DEEPSEEK API KEY"),
+    api_base=os.environ.get("DEEPSEEK_API_BASE",
+                            "https://api.deepseek.com/chat/completions"),
+    meta_template=[
+        dict(role="system", api_role="system"),
+        dict(role="user", api_role="user"),
+        dict(role="assistant", api_role="assistant"),
+        dict(role="environment", api_role="system"),
+    ],
+    top_p=0.8,
+    top_k=1,
+    temperature=0,
+    max_new_tokens=4096,
+    repetition_penalty=1.02,
+)
+
 url = "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions"
 qwen = dict(
     type=GPTAPI,
